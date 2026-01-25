@@ -59,17 +59,32 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Load locations
+      // Load locations (geofences)
       const { data: locData } = await supabase
-        .from('locations')
+        .from('geofences')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      setLocations(locData || []);
-      if (locData && locData.length > 0) {
-        setSelectedLocation(locData[0]);
+      // Map geofences to Location format
+      const mappedLocations: Location[] = (locData || []).map((g: any) => ({
+        id: g.id,
+        user_id: g.user_id,
+        name: g.name,
+        latitude: g.latitude,
+        longitude: g.longitude,
+        radius: g.radius || 100,
+        color: g.color || '#EF4444',
+        status: g.status || 'active',
+        deleted_at: g.deleted_at,
+        created_at: g.created_at,
+        updated_at: g.updated_at,
+      }));
+
+      setLocations(mappedLocations);
+      if (mappedLocations.length > 0) {
+        setSelectedLocation(mappedLocations[0]);
       }
 
       // Load today's sessions
@@ -84,12 +99,13 @@ export default function DashboardPage() {
         .eq('user_id', user.id)
         .gte('entry_at', today.toISOString())
         .lt('entry_at', tomorrow.toISOString())
+        .is('deleted_at', null)
         .order('entry_at', { ascending: false });
 
-      const computed: ComputedSession[] = (sessData || []).map((record) => ({
+      const computed: ComputedSession[] = (sessData || []).map((record: any) => ({
         ...record,
         status: record.exit_at ? 'finished' : 'active',
-        duration_minutes: calculateDuration(record.entry_at, record.exit_at),
+        computed_duration_minutes: calculateDuration(record.entry_at, record.exit_at),
       }));
 
       setSessions(computed);
@@ -139,18 +155,20 @@ export default function DashboardPage() {
         exitDate.setDate(exitDate.getDate() + 1);
       }
 
+      const durationMins = Math.round((exitDate.getTime() - entryDate.getTime()) / 60000) - breakMinutes;
+
       const { error } = await supabase.from('records').insert({
         user_id: user.id,
-        location_id: selectedLocation.id,
-        location_name: selectedLocation.name,
-        color: selectedLocation.color,
+        geofence_id: selectedLocation.id,
+        geofence_name: selectedLocation.name,
         entry_at: entryDate.toISOString(),
         exit_at: exitDate.toISOString(),
         pause_minutes: breakMinutes,
-        type: 'manual',
-        manually_edited: true,
-        lat: currentPosition?.lat,
-        lng: currentPosition?.lng,
+        duration_minutes: durationMins,
+        entry_method: 'manual',
+        exit_method: 'manual',
+        is_manual_entry: true,
+        manually_edited: false,
       });
 
       if (error) throw error;
@@ -171,8 +189,8 @@ export default function DashboardPage() {
   };
 
   const getLocationTime = (locationId: string) => {
-    const locationSessions = sessions.filter(s => s.location_id === locationId);
-    const total = locationSessions.reduce((sum, s) => sum + s.duration_minutes - s.pause_minutes, 0);
+    const locationSessions = sessions.filter(s => s.geofence_id === locationId);
+    const total = locationSessions.reduce((sum, s) => sum + s.computed_duration_minutes - (s.pause_minutes || 0), 0);
     return formatDuration(total);
   };
 

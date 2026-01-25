@@ -35,7 +35,7 @@ export default function LocationsPage() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('locations')
+        .from('geofences')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
@@ -98,7 +98,7 @@ export default function LocationsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase.from('locations').insert({
+      const { error } = await supabase.from('geofences').insert({
         user_id: user.id,
         name,
         latitude: newLocation.latitude,
@@ -121,7 +121,7 @@ export default function LocationsPage() {
   const handleEditLocation = async (location: Location, newName: string, newColor: string) => {
     try {
       const { error } = await supabase
-        .from('locations')
+        .from('geofences')
         .update({ name: newName, color: newColor, updated_at: new Date().toISOString() })
         .eq('id', location.id);
 
@@ -139,7 +139,7 @@ export default function LocationsPage() {
 
     try {
       const { error } = await supabase
-        .from('locations')
+        .from('geofences')
         .update({
           status: 'deleted',
           deleted_at: new Date().toISOString(),

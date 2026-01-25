@@ -53,10 +53,10 @@ export default function ReportsPage() {
 
       if (error) throw error;
 
-      const computed: ComputedSession[] = (data || []).map((record) => ({
+      const computed: ComputedSession[] = (data || []).map((record: any) => ({
         ...record,
         status: record.exit_at ? 'finished' : 'active',
-        duration_minutes: calculateDuration(record.entry_at, record.exit_at),
+        computed_duration_minutes: calculateDuration(record.entry_at, record.exit_at),
       }));
 
       setSessions(computed);
@@ -134,7 +134,7 @@ export default function ReportsPage() {
       return entryDate >= dayStart && entryDate <= dayEnd;
     });
 
-    return daySessions.reduce((sum, s) => sum + s.duration_minutes - s.pause_minutes, 0);
+    return daySessions.reduce((sum, s) => sum + s.computed_duration_minutes - (s.pause_minutes || 0), 0);
   };
 
   // Check if a session is active (no exit time)
@@ -150,7 +150,7 @@ export default function ReportsPage() {
     });
   };
 
-  const totalMinutes = sessions.reduce((sum, s) => sum + s.duration_minutes - s.pause_minutes, 0);
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.computed_duration_minutes - (s.pause_minutes || 0), 0);
   const days = getDays();
   const weekDays = viewMode === 'week' ? days : days.slice(0, 7);
   const maxMinutes = Math.max(...weekDays.map(getDayHours), 60); // Minimum 60 minutes for scale
