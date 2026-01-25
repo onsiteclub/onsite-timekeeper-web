@@ -4,56 +4,51 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { ComputedSession, calculateDuration, formatDuration } from '@/types/database';
-import { Button } from '@/components/ui/Button';
-import { ReportGenerator } from '@/components/ReportGenerator';
-import { getDaysInMonth, isSameDay } from '@/lib/utils';
 
 export default function ReportsPage() {
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sessions, setSessions] = useState<ComputedSession[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [daySessions, setDaySessions] = useState<ComputedSession[]>([]);
-  const [isReportOpen, setIsReportOpen] = useState(false);
-  const [userName, setUserName] = useState('User');
-  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
   useEffect(() => {
-    loadUserInfo();
-    loadMonthSessions();
-  }, [currentDate]);
+    loadSessions();
+  }, [currentDate, viewMode]);
 
-  const loadUserInfo = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-      setUserName(profile?.full_name || user.email?.split('@')[0] || 'User');
-    }
+  const getWeekRange = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const start = new Date(d);
+    start.setDate(d.getDate() - day);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
   };
 
-  const loadMonthSessions = async () => {
+  const getMonthRange = (date: Date) => {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+    return { start, end };
+  };
+
+  const loadSessions = async () => {
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const startDate = new Date(year, month, 1);
-      const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+      const range = viewMode === 'week' ? getWeekRange(currentDate) : getMonthRange(currentDate);
 
       const { data, error } = await supabase
         .from('records')
         .select('*')
         .eq('user_id', user.id)
-        .gte('entry_at', startDate.toISOString())
-        .lte('entry_at', endDate.toISOString())
+        .gte('entry_at', range.start.toISOString())
+        .lte('entry_at', range.end.toISOString())
         .order('entry_at', { ascending: true });
 
       if (error) throw error;
@@ -72,217 +67,245 @@ export default function ReportsPage() {
     }
   };
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    const filtered = sessions.filter((s) => isSameDay(s.entry_at, date));
-    setDaySessions(filtered);
-  };
-
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
-
-  const daysInMonth = getDaysInMonth(
-    currentDate.getFullYear(),
-    currentDate.getMonth()
-  );
-
-  // Group sessions by date
-  const sessionsByDate = new Map<string, ComputedSession[]>();
-  sessions.forEach((session) => {
-    const dateKey = new Date(session.entry_at).toDateString();
-    if (!sessionsByDate.has(dateKey)) {
-      sessionsByDate.set(dateKey, []);
+  const handlePrev = () => {
+    const d = new Date(currentDate);
+    if (viewMode === 'week') {
+      d.setDate(d.getDate() - 7);
+    } else {
+      d.setMonth(d.getMonth() - 1);
     }
-    sessionsByDate.get(dateKey)!.push(session);
-  });
+    setCurrentDate(d);
+  };
 
-  const monthName = currentDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  const handleNext = () => {
+    const d = new Date(currentDate);
+    if (viewMode === 'week') {
+      d.setDate(d.getDate() + 7);
+    } else {
+      d.setMonth(d.getMonth() + 1);
+    }
+    setCurrentDate(d);
+  };
+
+  // Get date range string
+  const getDateRangeString = () => {
+    if (viewMode === 'week') {
+      const range = getWeekRange(currentDate);
+      const startStr = range.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endStr = range.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${startStr} - ${endStr}`;
+    } else {
+      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+  };
+
+  // Get days for display
+  const getDays = () => {
+    if (viewMode === 'week') {
+      const range = getWeekRange(currentDate);
+      const days = [];
+      const d = new Date(range.start);
+      while (d <= range.end) {
+        days.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      return days;
+    } else {
+      const range = getMonthRange(currentDate);
+      const days = [];
+      const d = new Date(range.start);
+      while (d <= range.end) {
+        days.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      return days;
+    }
+  };
+
+  // Calculate hours for a specific day
+  const getDayHours = (date: Date) => {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const daySessions = sessions.filter((s) => {
+      const entryDate = new Date(s.entry_at);
+      return entryDate >= dayStart && entryDate <= dayEnd;
+    });
+
+    return daySessions.reduce((sum, s) => sum + s.duration_minutes - s.pause_minutes, 0);
+  };
+
+  // Check if a session is active (no exit time)
+  const hasActiveSession = (date: Date) => {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return sessions.some((s) => {
+      const entryDate = new Date(s.entry_at);
+      return entryDate >= dayStart && entryDate <= dayEnd && !s.exit_at;
+    });
+  };
+
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.duration_minutes - s.pause_minutes, 0);
+  const days = getDays();
+  const weekDays = viewMode === 'week' ? days : days.slice(0, 7);
+  const maxMinutes = Math.max(...weekDays.map(getDayHours), 60); // Minimum 60 minutes for scale
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Reports</h1>
-        <p className="text-text-secondary">View and export your work hours</p>
-      </div>
+    <div className="max-w-lg mx-auto">
+      {/* Header */}
+      <h1 className="text-2xl font-bold text-text-primary mb-4">Reports</h1>
 
-      {/* Calendar */}
-      <div className="bg-surface rounded-lg shadow p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <Button variant="ghost" onClick={handlePrevMonth}>
-            ← Previous
-          </Button>
-          <h2 className="text-xl font-semibold text-text-primary">{monthName}</h2>
-          <Button variant="ghost" onClick={handleNextMonth}>
-            Next →
-          </Button>
-        </div>
+      {/* Date Navigation Card */}
+      <div className="bg-white rounded-2xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={handlePrev}
+            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
 
-        <div className="grid grid-cols-7 gap-2">
-          {/* Day headers */}
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div
-              key={day}
-              className="text-center text-sm font-medium text-text-muted py-2"
-            >
-              {day}
-            </div>
-          ))}
-
-          {/* Empty cells for days before month starts */}
-          {Array.from({ length: daysInMonth[0].getDay() }).map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
-
-          {/* Days */}
-          {daysInMonth.map((date) => {
-            const dateKey = date.toDateString();
-            const daySessions = sessionsByDate.get(dateKey) || [];
-            const totalMinutes = daySessions.reduce(
-              (sum, s) => sum + s.duration_minutes - s.pause_minutes,
-              0
-            );
-            const hasHours = daySessions.length > 0;
-            const isToday = isSameDay(date, new Date());
-            const isSelected = selectedDate && isSameDay(date, selectedDate);
-
-            return (
-              <button
-                key={date.toISOString()}
-                onClick={() => handleDateClick(date)}
-                className={`
-                  p-2 rounded-lg text-center transition-colors
-                  ${isToday ? 'ring-2 ring-primary' : ''}
-                  ${isSelected ? 'bg-primary text-white' : ''}
-                  ${!isSelected && hasHours ? 'bg-blue-50 hover:bg-blue-100' : ''}
-                  ${!isSelected && !hasHours ? 'hover:bg-gray-100' : ''}
-                `}
-              >
-                <div className="text-sm font-medium">{date.getDate()}</div>
-                {hasHours && (
-                  <div
-                    className={`text-xs mt-1 ${
-                      isSelected ? 'text-white' : 'text-primary'
-                    }`}
-                  >
-                    {formatDuration(totalMinutes)}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Day Detail */}
-      {selectedDate && (
-        <div className="bg-surface rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-text-primary">
-              {selectedDate.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </h2>
-            {daySessions.length > 0 && (
-              <Button onClick={() => setIsReportOpen(true)}>
-                📄 Generate Report
-              </Button>
-            )}
+          <div className="text-center">
+            <p className="text-sm text-text-secondary">{getDateRangeString()}</p>
+            <p className="text-2xl font-bold text-text-primary">{formatDuration(totalMinutes)}</p>
           </div>
 
-          {daySessions.length === 0 ? (
-            <p className="text-text-muted text-center py-8">
-              No hours recorded for this day
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {daySessions.map((session) => {
-                const netMinutes = session.duration_minutes - session.pause_minutes;
-                const entryTime = new Date(session.entry_at).toLocaleTimeString(
-                  'en-US',
-                  {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                  }
-                );
-                const exitTime = session.exit_at
-                  ? new Date(session.exit_at).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })
-                  : 'In Progress';
+          <button
+            onClick={handleNext}
+            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
 
-                return (
-                  <div
-                    key={session.id}
-                    className="border-l-4 pl-4 py-2"
-                    style={{ borderLeftColor: session.color || '#4A90D9' }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-text-primary">
-                          📍 {session.location_name || 'Unknown Location'}
-                        </h3>
-                        <p className="text-sm text-text-secondary mt-1">
-                          {session.manually_edited && '*Edited '}
-                          ➜ {entryTime} → {exitTime}
-                        </p>
-                        {session.pause_minutes > 0 && (
-                          <p className="text-sm text-text-secondary">
-                            Break: {session.pause_minutes}min
-                          </p>
-                        )}
-                      </div>
-                      <p className="text-lg font-semibold text-primary">
-                        {formatDuration(netMinutes)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* View Mode Toggle */}
+        <div className="flex bg-gray-100 rounded-xl p-1">
+          <button
+            onClick={() => setViewMode('week')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'week'
+                ? 'bg-text-primary text-white'
+                : 'text-text-secondary'
+            }`}
+          >
+            Week
+          </button>
+          <button
+            onClick={() => setViewMode('month')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'month'
+                ? 'bg-text-primary text-white'
+                : 'text-text-secondary'
+            }`}
+          >
+            Month
+          </button>
+        </div>
+      </div>
 
-              <div className="pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-text-primary">
-                    Total Hours:
-                  </span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatDuration(
-                      daySessions.reduce(
-                        (sum, s) => sum + s.duration_minutes - s.pause_minutes,
-                        0
-                      )
-                    )}
-                  </span>
-                </div>
+      {/* Daily Breakdown */}
+      <div className="space-y-2 mb-4">
+        {days.map((day) => {
+          const minutes = getDayHours(day);
+          const hasActive = hasActiveSession(day);
+          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' });
+          const dayNum = day.getDate();
+          const today = isToday(day);
+
+          return (
+            <div
+              key={day.toISOString()}
+              className={`flex items-center justify-between p-3 rounded-xl ${
+                today ? 'bg-primary-light border-2 border-primary' : 'bg-gray-100'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-text-secondary text-sm w-8">{dayName}</span>
+                <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium ${
+                  today ? 'bg-primary text-white' : 'bg-gray-200 text-text-primary'
+                }`}>
+                  {dayNum}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasActive && (
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                )}
+                <span className={`text-sm font-medium ${minutes > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
+                  {minutes > 0 ? formatDuration(minutes) : '—'}
+                </span>
               </div>
             </div>
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
-      {/* Report Generator Modal */}
-      {selectedDate && (
-        <ReportGenerator
-          isOpen={isReportOpen}
-          onClose={() => setIsReportOpen(false)}
-          date={selectedDate}
-          sessions={daySessions}
-          userName={userName}
-          userId={userId}
-        />
+      {/* Weekly Chart */}
+      {viewMode === 'week' && (
+        <div className="bg-white rounded-2xl p-4">
+          <h3 className="text-sm font-medium text-text-secondary mb-2">Weekly Hours</h3>
+          <p className="text-xs text-text-muted mb-4">
+            {getDateRangeString().split(' - ')[0]}
+          </p>
+
+          <div className="flex items-end justify-between h-32 gap-2 mb-2">
+            {weekDays.map((day) => {
+              const minutes = getDayHours(day);
+              const height = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+              const dayName = day.toLocaleDateString('en-US', { weekday: 'narrow' });
+              const today = isToday(day);
+
+              // Determine bar color based on minutes
+              let barColor = 'bg-gray-200';
+              if (minutes > 0) {
+                if (minutes >= 480) { // 8+ hours
+                  barColor = 'bg-green-800';
+                } else if (minutes >= 360) { // 6+ hours
+                  barColor = 'bg-primary';
+                } else {
+                  barColor = 'bg-primary-light';
+                }
+              }
+
+              return (
+                <div key={day.toISOString()} className="flex-1 flex flex-col items-center">
+                  {minutes > 0 && (
+                    <span className="text-xs text-text-muted mb-1">
+                      {formatDuration(minutes)}
+                    </span>
+                  )}
+                  <div className="w-full flex flex-col items-center justify-end h-24">
+                    <div
+                      className={`w-full max-w-[40px] rounded-t-lg ${barColor} transition-all`}
+                      style={{ height: `${Math.max(height, 4)}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs mt-2 ${today ? 'font-bold text-primary' : 'text-text-muted'}`}>
+                    {dayName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center pt-2 border-t border-gray-100">
+            <span className="text-sm text-text-muted">{formatDuration(totalMinutes)} total</span>
+          </div>
+        </div>
       )}
     </div>
   );
