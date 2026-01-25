@@ -97,14 +97,15 @@ export function QRCodeScanner({ isOpen, onClose, onSuccess }: QRCodeScannerProps
         throw new Error('Token invalid or expired');
       }
 
-      // Create access grant
+      // Create access grant - immediate access (no approval needed)
       const { error: grantError } = await supabase
         .from('access_grants')
         .insert({
           owner_id: pending.owner_id,
           viewer_id: user.id,
           token,
-          status: 'pending',
+          status: 'active',
+          accepted_at: new Date().toISOString(),
         });
 
       if (grantError) {
@@ -150,7 +151,7 @@ export function QRCodeScanner({ isOpen, onClose, onSuccess }: QRCodeScannerProps
         {!scanning ? (
           <div className="text-center py-8">
             <p className="text-text-secondary mb-4">
-              Scan a worker's QR code to request access to their timesheet
+              Scan a worker's QR code to get access to their timesheet
             </p>
             <Button onClick={startScanning}>📷 Start Camera</Button>
           </div>

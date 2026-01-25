@@ -61,23 +61,6 @@ export default function TeamPage() {
     }
   };
 
-  const handleApproveGrant = async (grantId: string) => {
-    try {
-      const { error } = await supabase
-        .from('access_grants')
-        .update({
-          status: 'active',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', grantId);
-
-      if (error) throw error;
-      await loadGrants();
-    } catch (err: any) {
-      alert(err.message || 'Failed to approve access');
-    }
-  };
-
   const handleRevokeGrant = async (grantId: string) => {
     if (!confirm('Are you sure you want to revoke this access?')) return;
 
@@ -97,7 +80,6 @@ export default function TeamPage() {
     }
   };
 
-  const pendingGrants = myGrants.filter((g) => g.status === 'pending');
   const activeGrants = myGrants.filter((g) => g.status === 'active');
 
   return (
@@ -118,51 +100,7 @@ export default function TeamPage() {
         </Button>
       </div>
 
-      {/* Pending Requests */}
-      {pendingGrants.length > 0 && (
-        <div className="bg-surface rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">
-            Pending Requests ({pendingGrants.length})
-          </h2>
-          <div className="space-y-3">
-            {pendingGrants.map((grant) => (
-              <div
-                key={grant.id}
-                className="flex justify-between items-center p-4 bg-yellow-50 rounded-lg border border-warning"
-              >
-                <div>
-                  <p className="font-medium text-text-primary">
-                    {grant.viewer_profile?.full_name || 'Unknown User'}
-                  </p>
-                  <p className="text-sm text-text-secondary">
-                    {grant.viewer_profile?.email}
-                  </p>
-                  <p className="text-xs text-text-muted mt-1">
-                    Requested: {new Date(grant.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => handleApproveGrant(grant.id)}
-                  >
-                    ✓ Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleRevokeGrant(grant.id)}
-                  >
-                    ✗ Deny
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Active Managers */}
+      {/* People with Access */}
       <div className="bg-surface rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold text-text-primary mb-4">
           People with Access ({activeGrants.length})
