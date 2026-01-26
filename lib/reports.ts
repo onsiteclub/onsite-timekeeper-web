@@ -68,7 +68,7 @@ export function generateReport(options: ReportOptions): string {
       report += `Break: ${session.pause_minutes}min\n`;
     }
 
-    const netMinutes = session.duration_minutes - session.pause_minutes;
+    const netMinutes = (session.duration_minutes || 0) - (session.pause_minutes || 0);
     report += `➜ ${formatDuration(netMinutes)}\n\n`;
   });
 
