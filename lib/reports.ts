@@ -28,7 +28,7 @@ export function generateReport(options: ReportOptions): string {
   const { userName, date, sessions, userId, regionCode = 'XX' } = options;
 
   const totalMinutes = sessions.reduce(
-    (sum, session) => sum + session.duration_minutes - session.pause_minutes,
+    (sum, session) => sum + (session.duration_minutes || 0) - (session.pause_minutes || 0),
     0
   );
 
