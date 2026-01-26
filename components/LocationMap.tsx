@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import Map, { Marker, NavigationControl } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { GoogleMap, useJsApiLoader, Marker, Circle } from '@react-google-maps/api';
 import { Location } from '@/types/database';
 
 interface LocationMapProps {
@@ -12,73 +11,120 @@ interface LocationMapProps {
   selectedLocation?: Location | null;
 }
 
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%',
+};
+
+const defaultCenter = {
+  lat: -23.5505, // São Paulo
+  lng: -46.6333,
+};
+
 export function LocationMap({ locations, onMapClick, selectedLocation }: LocationMapProps) {
-  const [viewport, setViewport] = useState({
-    longitude: -75.6972,
-    latitude: 45.4215,
-    zoom: 12,
+  const [center, setCenter] = useState(defaultCenter);
+  const [zoom, setZoom] = useState(12);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   });
 
-  // Update viewport when selected location changes
+  // Update center when selected location changes
   useEffect(() => {
     if (selectedLocation) {
-      setViewport({
-        longitude: selectedLocation.longitude,
-        latitude: selectedLocation.latitude,
-        zoom: 14,
+      setCenter({
+        lat: selectedLocation.latitude,
+        lng: selectedLocation.longitude,
       });
+      setZoom(16);
     }
   }, [selectedLocation]);
 
   const handleMapClick = useCallback(
-    (event: any) => {
-      if (onMapClick && event.lngLat) {
-        onMapClick(event.lngLat.lng, event.lngLat.lat);
+    (event: google.maps.MapMouseEvent) => {
+      if (onMapClick && event.latLng) {
+        onMapClick(event.latLng.lng(), event.latLng.lat());
       }
     },
     [onMapClick]
   );
 
-  // Get Mapbox token from environment
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+  if (loadError) {
+    return (
+      <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+        <p className="text-red-500">Erro ao carregar Google Maps</p>
+      </div>
+    );
+  }
 
-  if (!mapboxToken) {
+  if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     return (
       <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
         <p className="text-text-muted">
-          Mapbox token not configured. Please add NEXT_PUBLIC_MAPBOX_TOKEN to your .env.local
+          Google Maps API key não configurada. Adicione NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ao .env.local
         </p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
     <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border">
-      <Map
-        {...viewport}
-        onMove={(evt) => setViewport(evt.viewState)}
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={center}
+        zoom={zoom}
         onClick={handleMapClick}
-        mapboxAccessToken={mapboxToken}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-        style={{ width: '100%', height: '100%' }}
+        options={{
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        }}
       >
-        <NavigationControl position="top-right" />
-
         {locations.map((location) => (
-          <Marker
-            key={location.id}
-            longitude={location.longitude}
-            latitude={location.latitude}
-            anchor="bottom"
-          >
-            <div
-              className="w-8 h-8 rounded-full border-4 border-white shadow-lg cursor-pointer transform hover:scale-110 transition-transform"
-              style={{ backgroundColor: location.color }}
+          <div key={location.id}>
+            <Marker
+              position={{
+                lat: location.latitude,
+                lng: location.longitude,
+              }}
               title={location.name}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 12,
+                fillColor: location.color || '#F5B800',
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 3,
+              }}
             />
-          </Marker>
+            {location.radius && (
+              <Circle
+                center={{
+                  lat: location.latitude,
+                  lng: location.longitude,
+                }}
+                radius={location.radius}
+                options={{
+                  fillColor: location.color || '#F5B800',
+                  fillOpacity: 0.15,
+                  strokeColor: location.color || '#F5B800',
+                  strokeOpacity: 0.5,
+                  strokeWeight: 2,
+                }}
+              />
+            )}
+          </div>
         ))}
-      </Map>
+      </GoogleMap>
     </div>
   );
 }

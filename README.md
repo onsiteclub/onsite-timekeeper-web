@@ -7,7 +7,7 @@ Web portal complementar ao app mobile OnSite Timekeeper. Permite entrada manual 
 - **Frontend**: Next.js 14+ (App Router) + TypeScript
 - **Styling**: Tailwind CSS
 - **Auth**: Supabase SSR
-- **Maps**: react-map-gl (Mapbox)
+- **Maps**: @react-google-maps/api (Google Maps)
 - **QR Code**: qrcode.react + html5-qrcode
 - **Deploy**: Vercel
 
@@ -26,13 +26,13 @@ Copie `.env.local.example` para `.env.local` e preencha:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIza...
 ```
 
-Para obter o Mapbox token:
-1. Crie conta em https://mapbox.com
-2. Acesse https://account.mapbox.com/access-tokens
-3. Copie o Default Public Token ou crie um novo
+Para obter a chave do Google Maps:
+1. Acesse https://console.cloud.google.com
+2. Crie um projeto e ative a Maps JavaScript API
+3. Crie uma API key em Credentials
 
 ### 3. Rodar Desenvolvimento
 
@@ -56,7 +56,7 @@ Acesse http://localhost:3000
 - [x] Summary card com total de horas
 
 ### ✅ Fase 3: Locations
-- [x] Mapa interativo (Mapbox)
+- [x] Mapa interativo (Google Maps)
 - [x] Adicionar local via click no mapa
 - [x] Lista de locais existentes
 - [x] Editar/Deletar local (soft delete)
@@ -132,7 +132,7 @@ types/
 3. Adicionar variáveis de ambiente:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_MAPBOX_TOKEN`
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 4. Deploy automático
 
 ### Supabase
@@ -148,10 +148,10 @@ RLS policies devem estar ativas para proteger os dados.
 
 ## Troubleshooting
 
-### Mapbox não aparece
-- Verifique se `NEXT_PUBLIC_MAPBOX_TOKEN` está configurado
-- Token deve começar com `pk.`
-- Confirme que o token está ativo no Mapbox dashboard
+### Google Maps não aparece
+- Verifique se `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` está configurado
+- Confirme que a Maps JavaScript API está ativada no Google Cloud Console
+- Verifique se a API key não tem restrições de domínio bloqueando
 
 ### Login não funciona
 - Verifique se as credenciais do Supabase estão corretas

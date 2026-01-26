@@ -97,21 +97,20 @@ export function QRCodeScanner({ isOpen, onClose, onSuccess }: QRCodeScannerProps
         throw new Error('Token invalid or expired');
       }
 
-      // Create access grant - immediate access (no approval needed)
+      // Create or reactivate access grant - immediate access (no approval needed)
       const { error: grantError } = await supabase
         .from('access_grants')
-        .insert({
+        .upsert({
           owner_id: pending.owner_id,
           viewer_id: user.id,
           token,
           status: 'active',
           accepted_at: new Date().toISOString(),
+        }, {
+          onConflict: 'owner_id,viewer_id',
         });
 
       if (grantError) {
-        if (grantError.code === '23505') {
-          throw new Error('You already have access to this worker');
-        }
         throw grantError;
       }
 

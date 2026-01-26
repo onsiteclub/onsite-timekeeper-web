@@ -4,14 +4,14 @@
 
 ### Pré-requisitos
 - Conta no Vercel (grátis)
-- Conta no Mapbox (grátis)
+- Google Cloud Console com Maps JavaScript API ativada
 - Supabase já configurado (do app mobile)
 
-### Passo 1: Configurar Mapbox
+### Passo 1: Configurar Google Maps
 
-1. Acesse https://mapbox.com e crie conta
-2. Vá em https://account.mapbox.com/access-tokens
-3. Copie o **Default Public Token** (começa com `pk.`)
+1. Acesse https://console.cloud.google.com
+2. Crie um projeto e ative a Maps JavaScript API
+3. Crie uma API key em Credentials
 
 ### Passo 2: Preparar .env.local
 
@@ -20,7 +20,7 @@ Crie arquivo `.env.local` na raiz do projeto:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1IjoieW91ci11c2VyIiwiYSI6ImNscXh5ejN6ZjBxdXEya3BsdWNxeXd6enQifQ...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...
 ```
 
 ### Passo 3: Instalar e Testar Local
@@ -88,12 +88,12 @@ No Supabase Dashboard:
    - ✅ Gerar relatório
    - ✅ QR code linking
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Map failed to load"
-- Token do Mapbox está correto?
-- Variável começa com `pk.`?
-- Token está ativo no dashboard do Mapbox?
+- API key do Google Maps está correta?
+- Maps JavaScript API está ativada no Google Cloud Console?
+- A API key tem restrições de domínio bloqueando?
 
 ### "Authentication failed"
 - Supabase URL e ANON_KEY estão corretos?
