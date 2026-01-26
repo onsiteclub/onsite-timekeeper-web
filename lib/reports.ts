@@ -56,7 +56,7 @@ export function generateReport(options: ReportOptions): string {
         })
       : 'In Progress';
 
-    report += `📍 ${session.location_name || 'Unknown Location'}\n`;
+    report += `📍 ${session.geofence_name || 'Unknown Location'}\n`;
 
     if (session.manually_edited) {
       report += `*Edited ➜ ${entryTime} -> ${exitTime}\n`;
@@ -64,7 +64,7 @@ export function generateReport(options: ReportOptions): string {
       report += `➜ ${entryTime} -> ${exitTime}\n`;
     }
 
-    if (session.pause_minutes > 0) {
+    if ((session.pause_minutes || 0) > 0) {
       report += `Break: ${session.pause_minutes}min\n`;
     }
 
