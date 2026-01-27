@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/BackButton';
 
 export default function SettingsPage() {
   const [userName, setUserName] = useState('');
@@ -44,7 +45,10 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">Settings</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <BackButton />
+        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
+      </div>
 
       {/* Profile Section */}
       <div className="bg-white rounded-2xl p-4 mb-4">

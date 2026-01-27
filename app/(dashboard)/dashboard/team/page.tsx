@@ -7,6 +7,7 @@ import { AccessGrant } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { QRCodeGenerator } from '@/components/QRCodeGenerator';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
+import { BackButton } from '@/components/BackButton';
 
 interface GrantWithProfile extends AccessGrant {
   viewer_profile?: { full_name: string; email: string };
@@ -85,9 +86,12 @@ export default function TeamPage() {
   return (
     <div className="max-w-lg mx-auto">
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-text-primary">Team</h1>
-        <p className="text-text-secondary text-sm">{viewerGrants.length} workers linked</p>
+      <div className="flex items-center gap-3 mb-4">
+        <BackButton />
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Team</h1>
+          <p className="text-text-secondary text-sm">{viewerGrants.length} workers linked</p>
+        </div>
       </div>
 
       {/* Action Buttons */}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { LocationMap } from '@/components/LocationMap';
+import { BackButton } from '@/components/BackButton';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<TimekeeperGeofence[]>([]);
@@ -160,8 +161,12 @@ export default function LocationsPage() {
 
   return (
     <div className="max-w-lg mx-auto -m-4 md:m-0">
-      {/* Search Bar */}
+      {/* Header + Search Bar */}
       <div className="p-4 bg-background sticky top-14 z-30">
+        <div className="flex items-center gap-3 mb-3">
+          <BackButton />
+          <h1 className="text-2xl font-bold text-text-primary">Locations</h1>
+        </div>
         <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
