@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { TimekeeperGeofence, ComputedSession, calculateDuration, formatDuration } from '@/types/database';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +27,18 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
 
   const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  // Read ?date=YYYY-MM-DD from URL (navigated from Reports page)
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const parsed = new Date(dateParam + 'T00:00:00');
+      if (!isNaN(parsed.getTime())) {
+        setSelectedDate(parsed);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadData();

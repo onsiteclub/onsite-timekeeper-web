@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ComputedSession, calculateDuration, formatDuration } from '@/types/database';
 
@@ -12,6 +13,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     loadSessions();
@@ -99,27 +101,29 @@ export default function ReportsPage() {
     }
   };
 
-  // Get days for display
-  const getDays = () => {
-    if (viewMode === 'week') {
-      const range = getWeekRange(currentDate);
-      const days = [];
-      const d = new Date(range.start);
-      while (d <= range.end) {
-        days.push(new Date(d));
-        d.setDate(d.getDate() + 1);
-      }
-      return days;
-    } else {
-      const range = getMonthRange(currentDate);
-      const days = [];
-      const d = new Date(range.start);
-      while (d <= range.end) {
-        days.push(new Date(d));
-        d.setDate(d.getDate() + 1);
-      }
-      return days;
+  // Get days for week view
+  const getWeekDays = () => {
+    const range = getWeekRange(currentDate);
+    const days = [];
+    const d = new Date(range.start);
+    while (d <= range.end) {
+      days.push(new Date(d));
+      d.setDate(d.getDate() + 1);
     }
+    return days;
+  };
+
+  // Get calendar grid for month view
+  const getCalendarGrid = () => {
+    const range = getMonthRange(currentDate);
+    const firstDay = range.start.getDay(); // 0 = Sunday
+    const daysInMonth: Date[] = [];
+    const d = new Date(range.start);
+    while (d <= range.end) {
+      daysInMonth.push(new Date(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return { firstDay, daysInMonth };
   };
 
   // Calculate hours for a specific day
@@ -150,15 +154,34 @@ export default function ReportsPage() {
     });
   };
 
-  const totalMinutes = sessions.reduce((sum, s) => sum + s.computed_duration_minutes - (s.pause_minutes || 0), 0);
-  const days = getDays();
-  const weekDays = viewMode === 'week' ? days : days.slice(0, 7);
-  const maxMinutes = Math.max(...weekDays.map(getDayHours), 60); // Minimum 60 minutes for scale
-
   const isToday = (date: Date) => {
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
+
+  const isFutureDate = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const check = new Date(date);
+    check.setHours(0, 0, 0, 0);
+    return check > today;
+  };
+
+  const handleDayClick = (date: Date) => {
+    if (isFutureDate(date)) {
+      alert('Cannot add entries for future dates');
+      return;
+    }
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    router.push(`/dashboard?date=${yyyy}-${mm}-${dd}`);
+  };
+
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.computed_duration_minutes - (s.pause_minutes || 0), 0);
+  const weekDays = viewMode === 'week' ? getWeekDays() : [];
+  const calendarGrid = viewMode === 'month' ? getCalendarGrid() : null;
+  const maxMinutes = Math.max(...weekDays.map(getDayHours), 60);
 
   return (
     <div className="max-w-lg mx-auto">
@@ -217,42 +240,111 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Daily Breakdown */}
-      <div className="space-y-2 mb-4">
-        {days.map((day) => {
-          const minutes = getDayHours(day);
-          const hasActive = hasActiveSession(day);
-          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' });
-          const dayNum = day.getDate();
-          const today = isToday(day);
+      {/* Week View - Day List */}
+      {viewMode === 'week' && (
+        <div className="space-y-2 mb-4">
+          {weekDays.map((day) => {
+            const minutes = getDayHours(day);
+            const hasActive = hasActiveSession(day);
+            const dayName = day.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayNum = day.getDate();
+            const today = isToday(day);
+            const future = isFutureDate(day);
 
-          return (
-            <div
-              key={day.toISOString()}
-              className={`flex items-center justify-between p-3 rounded-xl ${
-                today ? 'bg-primary-light border-2 border-primary' : 'bg-gray-100'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-text-secondary text-sm w-8">{dayName}</span>
-                <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium ${
-                  today ? 'bg-primary text-white' : 'bg-gray-200 text-text-primary'
-                }`}>
-                  {dayNum}
-                </span>
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => handleDayClick(day)}
+                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                  today
+                    ? 'bg-primary-light border-2 border-primary'
+                    : future
+                      ? 'bg-gray-50 opacity-60'
+                      : 'bg-gray-100 hover:bg-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-text-secondary text-sm w-8">{dayName}</span>
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium ${
+                    today ? 'bg-primary text-white' : 'bg-gray-200 text-text-primary'
+                  }`}>
+                    {dayNum}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasActive && (
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                  )}
+                  <span className={`text-sm font-bold ${minutes > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
+                    {minutes > 0 ? formatDuration(minutes) : '---'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Month View - Calendar Grid */}
+      {viewMode === 'month' && calendarGrid && (
+        <div className="bg-white rounded-2xl p-4 mb-4">
+          {/* Day-of-week headers */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <div key={d} className="text-center text-xs font-medium text-text-muted py-1">
+                {d}
               </div>
-              <div className="flex items-center gap-2">
-                {hasActive && (
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
-                )}
-                <span className={`text-sm font-medium ${minutes > 0 ? 'text-text-primary' : 'text-text-muted'}`}>
-                  {minutes > 0 ? formatDuration(minutes) : '—'}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+
+          {/* Calendar cells */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Empty cells before the 1st */}
+            {Array.from({ length: calendarGrid.firstDay }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+
+            {/* Day cells */}
+            {calendarGrid.daysInMonth.map((day) => {
+              const minutes = getDayHours(day);
+              const hasActive = hasActiveSession(day);
+              const today = isToday(day);
+              const future = isFutureDate(day);
+
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => handleDayClick(day)}
+                  className={`aspect-square rounded-xl flex flex-col items-center justify-center p-1 transition-all ${
+                    today
+                      ? 'bg-primary-light border-2 border-primary'
+                      : future
+                        ? 'bg-gray-50 opacity-50'
+                        : minutes > 0
+                          ? 'bg-gray-100 hover:bg-gray-200'
+                          : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <span
+                    className={`text-sm font-medium leading-none ${
+                      today ? 'text-primary font-bold' : future ? 'text-text-muted' : 'text-text-primary'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </span>
+                  {minutes > 0 ? (
+                    <span className="text-[10px] text-text-secondary font-medium mt-0.5 leading-none">
+                      {formatDuration(minutes)}
+                    </span>
+                  ) : hasActive ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-0.5" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Weekly Chart */}
       {viewMode === 'week' && (
