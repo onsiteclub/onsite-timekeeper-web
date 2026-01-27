@@ -28,7 +28,7 @@ export function QRCodeGenerator({ isOpen, onClose }: QRCodeGeneratorProps) {
 
       // Get user's name
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('core_profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();

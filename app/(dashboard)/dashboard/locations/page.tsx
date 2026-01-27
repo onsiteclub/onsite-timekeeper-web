@@ -3,14 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Location } from '@/types/database';
+import { TimekeeperGeofence } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { LocationMap } from '@/components/LocationMap';
 
 export default function LocationsPage() {
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<TimekeeperGeofence[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,8 +20,8 @@ export default function LocationsPage() {
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [editingLocation, setEditingLocation] = useState<TimekeeperGeofence | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<TimekeeperGeofence | null>(null);
 
   const supabase = createClient();
 
@@ -35,7 +35,7 @@ export default function LocationsPage() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('geofences')
+        .from('app_timekeeper_geofences')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
@@ -98,7 +98,7 @@ export default function LocationsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase.from('geofences').insert({
+      const { error } = await supabase.from('app_timekeeper_geofences').insert({
         user_id: user.id,
         name,
         latitude: newLocation.latitude,
@@ -118,10 +118,10 @@ export default function LocationsPage() {
     }
   };
 
-  const handleEditLocation = async (location: Location, newName: string, newColor: string) => {
+  const handleEditLocation = async (location: TimekeeperGeofence, newName: string, newColor: string) => {
     try {
       const { error } = await supabase
-        .from('geofences')
+        .from('app_timekeeper_geofences')
         .update({ name: newName, color: newColor, updated_at: new Date().toISOString() })
         .eq('id', location.id);
 
@@ -139,7 +139,7 @@ export default function LocationsPage() {
 
     try {
       const { error } = await supabase
-        .from('geofences')
+        .from('app_timekeeper_geofences')
         .update({
           status: 'deleted',
           deleted_at: new Date().toISOString(),

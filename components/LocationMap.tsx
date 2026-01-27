@@ -3,12 +3,12 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Circle } from '@react-google-maps/api';
-import { Location } from '@/types/database';
+import { TimekeeperGeofence } from '@/types/database';
 
 interface LocationMapProps {
-  locations: Location[];
+  locations: TimekeeperGeofence[];
   onMapClick?: (lng: number, lat: number) => void;
-  selectedLocation?: Location | null;
+  selectedLocation?: TimekeeperGeofence | null;
 }
 
 const mapContainerStyle = {

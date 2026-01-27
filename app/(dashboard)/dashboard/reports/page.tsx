@@ -44,7 +44,7 @@ export default function ReportsPage() {
       const range = viewMode === 'week' ? getWeekRange(currentDate) : getMonthRange(currentDate);
 
       const { data, error } = await supabase
-        .from('records')
+        .from('app_timekeeper_entries')
         .select('*')
         .eq('user_id', user.id)
         .gte('entry_at', range.start.toISOString())

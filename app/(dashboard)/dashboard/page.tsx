@@ -3,14 +3,14 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Location, ComputedSession, calculateDuration, formatDuration } from '@/types/database';
+import { TimekeeperGeofence, ComputedSession, calculateDuration, formatDuration } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 
 export default function DashboardPage() {
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<TimekeeperGeofence[]>([]);
   const [sessions, setSessions] = useState<ComputedSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<TimekeeperGeofence | null>(null);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
@@ -61,14 +61,14 @@ export default function DashboardPage() {
 
       // Load locations (geofences)
       const { data: locData } = await supabase
-        .from('geofences')
+        .from('app_timekeeper_geofences')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      // Map geofences to Location format
-      const mappedLocations: Location[] = (locData || []).map((g: any) => ({
+      // Map geofences to TimekeeperGeofence format
+      const mappedLocations: TimekeeperGeofence[] = (locData || []).map((g: any) => ({
         id: g.id,
         user_id: g.user_id,
         name: g.name,
@@ -94,7 +94,7 @@ export default function DashboardPage() {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const { data: sessData } = await supabase
-        .from('records')
+        .from('app_timekeeper_entries')
         .select('*')
         .eq('user_id', user.id)
         .gte('entry_at', today.toISOString())
@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
       const durationMins = Math.round((exitDate.getTime() - entryDate.getTime()) / 60000) - breakMinutes;
 
-      const { error } = await supabase.from('records').insert({
+      const { error } = await supabase.from('app_timekeeper_entries').insert({
         user_id: user.id,
         geofence_id: selectedLocation.id,
         geofence_name: selectedLocation.name,

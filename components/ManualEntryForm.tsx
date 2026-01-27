@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Location } from '@/types/database';
+import { TimekeeperGeofence } from '@/types/database';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Modal } from './ui/Modal';
@@ -15,7 +15,7 @@ interface ManualEntryFormProps {
 }
 
 export function ManualEntryForm({ isOpen, onClose, onSuccess }: ManualEntryFormProps) {
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<TimekeeperGeofence[]>([]);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [entryTime, setEntryTime] = useState('08:00');
@@ -37,7 +37,7 @@ export function ManualEntryForm({ isOpen, onClose, onSuccess }: ManualEntryFormP
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('locations')
+      .from('app_timekeeper_geofences')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
@@ -72,7 +72,7 @@ export function ManualEntryForm({ isOpen, onClose, onSuccess }: ManualEntryFormP
         throw new Error('Exit time must be after entry time');
       }
 
-      const { error: insertError } = await supabase.from('records').insert({
+      const { error: insertError } = await supabase.from('app_timekeeper_entries').insert({
         user_id: user.id,
         location_id: location.id,
         location_name: location.name,

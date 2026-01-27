@@ -21,7 +21,7 @@ export default async function DashboardLayout({
 
   // Try to get user's name from profiles table
   const { data: profile } = await supabase
-    .from('profiles')
+    .from('core_profiles')
     .select('full_name')
     .eq('id', user.id)
     .single();

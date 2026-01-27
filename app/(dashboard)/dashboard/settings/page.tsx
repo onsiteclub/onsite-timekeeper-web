@@ -23,7 +23,7 @@ export default function SettingsPage() {
       if (user) {
         setEmail(user.email || '');
         const { data: profile } = await supabase
-          .from('profiles')
+          .from('core_profiles')
           .select('full_name')
           .eq('id', user.id)
           .single();

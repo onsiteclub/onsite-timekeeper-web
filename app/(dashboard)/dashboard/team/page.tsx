@@ -36,7 +36,7 @@ export default function TeamPage() {
         .from('access_grants')
         .select(`
           *,
-          viewer_profile:profiles!access_grants_viewer_id_fkey(full_name, email)
+          viewer_profile:core_profiles!access_grants_viewer_id_fkey(full_name, email)
         `)
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
@@ -46,7 +46,7 @@ export default function TeamPage() {
         .from('access_grants')
         .select(`
           *,
-          owner_profile:profiles!access_grants_owner_id_fkey(full_name, email)
+          owner_profile:core_profiles!access_grants_owner_id_fkey(full_name, email)
         `)
         .eq('viewer_id', user.id)
         .eq('status', 'active')

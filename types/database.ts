@@ -4,7 +4,13 @@ export type LocationStatus = 'active' | 'deleted';
 export type EntryMethod = 'automatic' | 'manual' | 'qr_code' | 'nfc';
 export type GrantStatus = 'pending' | 'active' | 'revoked' | 'expired';
 
-export interface Location {
+export interface CoreProfile {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+export interface TimekeeperGeofence {
   id: string;
   user_id: string;
   name: string;
@@ -18,8 +24,8 @@ export interface Location {
   updated_at: string;
 }
 
-// Matches the actual Supabase records table
-export interface Record {
+// Matches the actual Supabase app_timekeeper_entries table
+export interface TimekeeperEntry {
   id: string;
   user_id: string;
   geofence_id: string | null;
@@ -47,7 +53,7 @@ export interface Record {
   deleted_at: string | null;
 }
 
-export interface ComputedSession extends Record {
+export interface ComputedSession extends TimekeeperEntry {
   status: 'active' | 'finished';
   computed_duration_minutes: number;
 }
