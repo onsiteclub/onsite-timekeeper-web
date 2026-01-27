@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { QRCodeGenerator } from '@/components/QRCodeGenerator';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
 import { BackButton } from '@/components/BackButton';
+import Link from 'next/link';
 
 interface GrantWithProfile extends AccessGrant {
   viewer_profile?: { full_name: string; email: string };
@@ -158,9 +159,9 @@ export default function TeamPage() {
                   </p>
                 </div>
               </div>
-              <button className="text-primary font-medium text-sm">
+              <Link href={`/dashboard/team/${grant.owner_id}`} className="text-primary font-medium text-sm">
                 View
-              </button>
+              </Link>
             </div>
           ))}
         </div>
