@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { TimekeeperGeofence, ComputedSession, calculateDuration, formatDuration } from '@/types/database';
@@ -25,6 +25,11 @@ export default function DashboardPage() {
   const [exitAmPm, setExitAmPm] = useState<'AM' | 'PM'>('PM');
   const [breakMinutes, setBreakMinutes] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  const entryHourRef = useRef<HTMLInputElement>(null);
+  const entryMinuteRef = useRef<HTMLInputElement>(null);
+  const exitHourRef = useRef<HTMLInputElement>(null);
+  const exitMinuteRef = useRef<HTMLInputElement>(null);
 
   const supabase = createClient();
   const searchParams = useSearchParams();
@@ -272,17 +277,33 @@ export default function DashboardPage() {
             <span className="text-text-secondary">Entry</span>
             <div className="flex items-center gap-2">
               <input
+                ref={entryHourRef}
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={entryHour}
-                onChange={(e) => setEntryHour(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  setEntryHour(v);
+                  if (v.length === 2) entryMinuteRef.current?.focus();
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-12 h-10 text-center text-lg font-medium bg-gray-100 rounded-lg"
                 maxLength={2}
               />
               <span className="text-xl text-text-muted">:</span>
               <input
+                ref={entryMinuteRef}
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={entryMinute}
-                onChange={(e) => setEntryMinute(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  setEntryMinute(v);
+                  if (v.length === 2) exitHourRef.current?.focus();
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-12 h-10 text-center text-lg font-medium bg-gray-100 rounded-lg"
                 maxLength={2}
               />
@@ -312,17 +333,33 @@ export default function DashboardPage() {
             <span className="text-text-secondary">Exit</span>
             <div className="flex items-center gap-2">
               <input
+                ref={exitHourRef}
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={exitHour}
-                onChange={(e) => setExitHour(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  setExitHour(v);
+                  if (v.length === 2) exitMinuteRef.current?.focus();
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-12 h-10 text-center text-lg font-medium bg-gray-100 rounded-lg"
                 maxLength={2}
               />
               <span className="text-xl text-text-muted">:</span>
               <input
+                ref={exitMinuteRef}
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={exitMinute}
-                onChange={(e) => setExitMinute(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  setExitMinute(v);
+                  if (v.length === 2) exitMinuteRef.current?.blur();
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-12 h-10 text-center text-lg font-medium bg-gray-100 rounded-lg"
                 maxLength={2}
               />
