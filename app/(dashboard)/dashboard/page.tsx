@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { TimekeeperGeofence, ComputedSession, calculateDuration, formatDuration } from '@/types/database';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,7 @@ export default function DashboardPage() {
 
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Read ?date=YYYY-MM-DD from URL (navigated from Reports page)
   useEffect(() => {
@@ -152,6 +153,12 @@ export default function DashboardPage() {
   };
 
   const handleSaveHours = async () => {
+    if (locations.length === 0) {
+      alert('You need to add a location first. Redirecting to Locations...');
+      router.push('/dashboard/locations?returnTo=dashboard');
+      return;
+    }
+
     if (!selectedLocation) {
       alert('Please select a location');
       return;

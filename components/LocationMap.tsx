@@ -16,18 +16,48 @@ const mapContainerStyle = {
   height: '100%',
 };
 
-const defaultCenter = {
-  lat: -23.5505, // São Paulo
-  lng: -46.6333,
+const fallbackCenter = {
+  lat: 45.4215,
+  lng: -75.6972,
 };
 
 export function LocationMap({ locations, onMapClick, selectedLocation }: LocationMapProps) {
-  const [center, setCenter] = useState(defaultCenter);
+  const [center, setCenter] = useState(fallbackCenter);
   const [zoom, setZoom] = useState(12);
+  const [geoResolved, setGeoResolved] = useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
   });
+
+  // On mount: center on user's geolocation or first saved location
+  useEffect(() => {
+    if (locations.length > 0) {
+      setCenter({
+        lat: locations[0].latitude,
+        lng: locations[0].longitude,
+      });
+      setGeoResolved(true);
+      return;
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (!geoResolved) {
+            setCenter({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+            setGeoResolved(true);
+          }
+        },
+        () => {
+          setGeoResolved(true);
+        }
+      );
+    }
+  }, [locations.length]);
 
   // Update center when selected location changes
   useEffect(() => {
@@ -51,7 +81,7 @@ export function LocationMap({ locations, onMapClick, selectedLocation }: Locatio
 
   if (loadError) {
     return (
-      <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
         <p className="text-red-500">Erro ao carregar Google Maps</p>
       </div>
     );
@@ -59,7 +89,7 @@ export function LocationMap({ locations, onMapClick, selectedLocation }: Locatio
 
   if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     return (
-      <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
         <p className="text-text-muted">
           Google Maps API key não configurada. Adicione NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ao .env.local
         </p>
@@ -69,14 +99,14 @@ export function LocationMap({ locations, onMapClick, selectedLocation }: Locatio
 
   if (!isLoaded) {
     return (
-      <div className="w-full h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border">
+    <div className="w-full h-full rounded-lg overflow-hidden border border-border">
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={center}

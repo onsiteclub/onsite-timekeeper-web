@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { TimekeeperGeofence } from '@/types/database';
 import { Button } from '@/components/ui/Button';
@@ -25,6 +26,9 @@ export default function LocationsPage() {
   const [selectedLocation, setSelectedLocation] = useState<TimekeeperGeofence | null>(null);
 
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
     loadLocations();
@@ -114,6 +118,10 @@ export default function LocationsPage() {
       await loadLocations();
       setIsModalOpen(false);
       setNewLocation(null);
+
+      if (returnTo === 'dashboard') {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to save location');
     }
@@ -234,6 +242,13 @@ export default function LocationsPage() {
           </button>
         </div>
       </div>
+
+      {/* Return banner */}
+      {returnTo === 'dashboard' && (
+        <div className="mx-4 mt-2 bg-primary-light border border-primary rounded-xl p-3 text-sm text-text-primary">
+          Add a location to save your hours. You'll be redirected back automatically.
+        </div>
+      )}
 
       {/* Map */}
       <div className="h-[300px] md:h-[400px] relative">
