@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { QRCodeGenerator } from '@/components/QRCodeGenerator';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
 import { BackButton } from '@/components/BackButton';
-import Link from 'next/link';
+import { WorkerHoursModal } from '@/components/WorkerHoursModal';
 
 interface GrantWithProfile extends AccessGrant {
   viewer_profile?: { full_name: string; email: string };
@@ -21,6 +21,7 @@ export default function TeamPage() {
   const [isQROpen, setIsQROpen] = useState(false);
   const [isScanOpen, setIsScanOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [viewingGrant, setViewingGrant] = useState<GrantWithProfile | null>(null);
 
   const supabase = createClient();
 
@@ -159,9 +160,12 @@ export default function TeamPage() {
                   </p>
                 </div>
               </div>
-              <Link href={`/dashboard/team/${grant.owner_id}`} className="text-primary font-medium text-sm">
+              <button
+                onClick={() => setViewingGrant(grant)}
+                className="text-primary font-medium text-sm"
+              >
                 View
-              </Link>
+              </button>
             </div>
           ))}
         </div>
@@ -215,6 +219,13 @@ export default function TeamPage() {
         isOpen={isScanOpen}
         onClose={() => setIsScanOpen(false)}
         onSuccess={loadGrants}
+      />
+
+      <WorkerHoursModal
+        isOpen={!!viewingGrant}
+        onClose={() => setViewingGrant(null)}
+        workerId={viewingGrant?.owner_id || ''}
+        workerName={viewingGrant?.owner_profile?.full_name || 'Worker'}
       />
     </div>
   );
