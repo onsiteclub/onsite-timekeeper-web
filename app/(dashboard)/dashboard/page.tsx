@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [breakMinutes, setBreakMinutes] = useState(0);
   const [saving, setSaving] = useState(false);
 
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const entryHourRef = useRef<HTMLInputElement>(null);
   const entryMinuteRef = useRef<HTMLInputElement>(null);
   const exitHourRef = useRef<HTMLInputElement>(null);
@@ -257,27 +258,31 @@ export default function DashboardPage() {
       <div className="bg-primary-light rounded-2xl p-4 mb-4">
         <div className="bg-white rounded-xl p-4 space-y-4">
           {/* Date Picker */}
-          <button
-            className="w-full flex items-center gap-2 text-left"
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'date';
-              input.value = selectedDate.toISOString().split('T')[0];
-              input.onchange = (e) => setSelectedDate(new Date((e.target as HTMLInputElement).value));
-              input.click();
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span className="text-text-primary font-medium">{formatDateDisplay(selectedDate)}</span>
-            <svg className="ml-auto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
+          <div className="relative">
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={selectedDate.toISOString().split('T')[0]}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedDate(new Date(e.target.value + 'T00:00:00'));
+                }
+              }}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            />
+            <div className="w-full flex items-center gap-2 text-left pointer-events-none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <span className="text-text-primary font-medium">{formatDateDisplay(selectedDate)}</span>
+              <svg className="ml-auto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </div>
 
           {/* Entry Time */}
           <div className="flex items-center justify-between">
