@@ -350,22 +350,26 @@ export function WorkerHoursModal({
             {/* Archive Buttons */}
             <div className="flex gap-2">
               <Button
-                variant="outline"
+                variant={selectedIds.size > 0 ? 'primary' : 'outline'}
                 size="sm"
                 onClick={handleArchiveSelected}
                 disabled={selectedIds.size === 0 || isArchiving}
                 className="flex-1"
               >
-                Archive ({selectedIds.size})
+                {isArchiving && selectedIds.size > 0 ? 'Archiving...' : `Archive (${selectedIds.size})`}
               </Button>
               <Button
-                variant="primary"
+                variant={selectedIds.size > 0 ? 'outline' : 'primary'}
                 size="sm"
-                onClick={handleArchiveAll}
+                onClick={() => {
+                  if (confirm(`Archive all ${sessions.length} entries?`)) {
+                    handleArchiveAll();
+                  }
+                }}
                 disabled={isArchiving}
                 className="flex-1"
               >
-                {isArchiving ? 'Archiving...' : 'Archive All'}
+                {isArchiving && selectedIds.size === 0 ? 'Archiving...' : 'Archive All'}
               </Button>
             </div>
           </>
